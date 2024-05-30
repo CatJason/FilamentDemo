@@ -7,6 +7,8 @@ import android.view.SurfaceView
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import com.google.android.filament.EntityManager
+import com.google.android.filament.LightManager
 import com.google.android.filament.View
 import com.google.android.filament.android.UiHelper
 import com.google.android.filament.utils.ModelViewer
@@ -88,6 +90,33 @@ class ModelRenderer {
 
         modelViewer.loadModelGlb(buffer)
         modelViewer.transformToUnitCube()
+
+        // Create a new directional light pointing from the front
+        val entityManager = EntityManager.get()
+        val light = entityManager.create()
+        LightManager.Builder(LightManager.Type.DIRECTIONAL)
+            .color(1.0f, 1.0f, 1.0f)
+            .intensity(100000.0f)
+            .direction(0.0f, 0.0f, -1.0f) // Light direction: from front to back
+            .castShadows(true)
+            .build(modelViewer.engine, light)
+
+        // Add the light to the scene
+        modelViewer.scene.addEntity(light)
+
+        // Remove the default light
+        modelViewer.scene.skybox = null
+        modelViewer.view.blendMode = View.BlendMode.TRANSLUCENT
+        modelViewer.renderer.clearOptions = modelViewer.renderer.clearOptions.apply {
+            clear = true
+        }
+
+        // Set render quality
+        modelViewer.view.apply {
+            renderQuality = renderQuality.apply {
+                hdrColorBuffer = View.QualityLevel.MEDIUM
+            }
+        }
     }
 
     inner class FrameCallback : Choreographer.FrameCallback {
